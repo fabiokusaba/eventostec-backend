@@ -1,5 +1,6 @@
 package com.eventostec.api.domain.event;
 
+import com.eventostec.api.domain.address.Address;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,4 +27,8 @@ public class Event {
     private String eventUrl;
     private Boolean remote;
     private Date date;
+
+    // Adicionando mais um campo que vai indicar a relação com a tabela Address.
+    @OneToOne(mappedBy = "event", cascade = CascadeType.ALL)
+    private Address address;
 }
