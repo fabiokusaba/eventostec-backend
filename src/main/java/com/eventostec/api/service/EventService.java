@@ -34,6 +34,9 @@ public class EventService {
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
+    private AddressService addressService;
+
     public Event createEvent(EventRequestDTO data) {
         String imgUrl = null;
 
@@ -56,6 +59,12 @@ public class EventService {
 
         // Salvando o nosso evento no banco de dados.
         eventRepository.save(newEvent);
+
+        // Depois de registrar esse evento na tabela/banco de dados eu criei uma condicional que se o evento não for
+        // remoto, então eu chamo o meu addressService e crio o address na tabela de endereços.
+        if (!data.remote()) {
+            this.addressService.createAddress(data, newEvent);
+        }
 
         // Retornando o evento criado.
         return newEvent;
