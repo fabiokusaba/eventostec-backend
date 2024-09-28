@@ -3,9 +3,13 @@ package com.eventostec.api.service;
 import com.amazonaws.services.s3.AmazonS3;
 import com.eventostec.api.domain.event.Event;
 import com.eventostec.api.domain.event.EventRequestDTO;
+import com.eventostec.api.domain.event.EventResponseDTO;
 import com.eventostec.api.repositories.EventRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,8 +17,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class EventService {
@@ -53,6 +59,35 @@ public class EventService {
 
         // Retornando o evento criado.
         return newEvent;
+    }
+
+    // Aqui vamos utilizar uma funcionalidade bem legal do Spring que é o utilitário de paginação, então o Spring já tem
+    // isso implementado basta a gente utilizar.
+    public List<EventResponseDTO> getUpcomingEvents(int page, int size) {
+        // Então, aqui a gente vai importar o objeto Pageable e a gente vai fazer um PageRequest passando page e size.
+        Pageable pageable = PageRequest.of(page, size);
+
+        // E agora a gente vai buscar esses eventos no repository para buscar por todos os eventos, mas aí a gente vai
+        // passar esse objeto de paginação ele vai entender que ele tem que buscar somente x eventos. Então, aqui vou
+        // criar um objeto do tipo Page que vai conter instâncias de Event dentro, ou seja, a minha página vai ter
+        // vários eventos dentro.
+        // A nossa próxima funcionalidade é retornar os eventos que ainda não aconteceram, então precisamos colocar um
+        // filtro para buscar somente eventos que a data ainda não ocorreu.
+        Page<Event> eventsPage = eventRepository.findUpcomingEvents(new Date(), pageable);
+
+        // E agora vou retornar o meu eventsPage mapeando que para cada evento eu vou declara um EventResponseDTO.
+        return eventsPage.stream()
+                .map(event -> new EventResponseDTO(
+                        event.getId(),
+                        event.getTitle(),
+                        event.getDescription(),
+                        event.getDate(),
+                        "",
+                        "",
+                        event.getRemote(),
+                        event.getEventUrl(),
+                        event.getImgUrl()))
+                .collect(Collectors.toList());
     }
 
     // Para fazermos toda a lógica para salvar no bucket da S3 a gente vai precisar instalar a SDK da AWS pra gente
