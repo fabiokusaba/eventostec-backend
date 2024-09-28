@@ -1,7 +1,9 @@
 package com.eventostec.api.service;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.eventostec.api.domain.coupon.Coupon;
 import com.eventostec.api.domain.event.Event;
+import com.eventostec.api.domain.event.EventDetailsDTO;
 import com.eventostec.api.domain.event.EventRequestDTO;
 import com.eventostec.api.domain.event.EventResponseDTO;
 import com.eventostec.api.repositories.EventRepository;
@@ -36,6 +38,8 @@ public class EventService {
 
     @Autowired
     private AddressService addressService;
+    @Autowired
+    private CouponService couponService;
 
     public Event createEvent(EventRequestDTO data) {
         String imgUrl = null;
@@ -68,6 +72,35 @@ public class EventService {
 
         // Retornando o evento criado.
         return newEvent;
+    }
+
+    public EventDetailsDTO getEventDetails(UUID eventId) {
+        // Procuramos pelo evento no nosso repository.
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        // Usar o couponService para consultar os cupons desse evento.
+        List<Coupon> coupons = couponService.consultCoupons(eventId, new Date());
+
+        // Passa por toda a lista de cupons e monta o nosso DTO.
+        List<EventDetailsDTO.CouponDTO> couponDTOs = coupons.stream()
+                .map(coupon -> new EventDetailsDTO.CouponDTO(
+                        coupon.getCode(),
+                        coupon.getDiscount(),
+                        coupon.getValid()))
+                .collect(Collectors.toList());
+
+        // E depois montamos o nosso DTO final que é o EventDetailsDTO.
+        return new EventDetailsDTO(
+                event.getId(),
+                event.getTitle(),
+                event.getDescription(),
+                event.getDate(),
+                event.getAddress() != null ? event.getAddress().getCity() : "",
+                event.getAddress() != null ? event.getAddress().getUf() : "",
+                event.getImgUrl(),
+                event.getEventUrl(),
+                couponDTOs);
     }
 
     // Aqui vamos utilizar uma funcionalidade bem legal do Spring que é o utilitário de paginação, então o Spring já tem
